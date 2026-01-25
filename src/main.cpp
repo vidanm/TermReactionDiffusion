@@ -7,16 +7,17 @@
 #include <notcurses/nckeys.h>
 #include <notcurses/notcurses.h>
 
-const char* CHARSTYLE = "0";
+const char CHARSTYLE = '0';
 const float FEED_RATE = 0.025;
 const float KILL_RATE = 0.055;
 const float DIFFUSION_RATE_U = 0.16;
 const float DIFFUSION_RATE_V = 0.08;
 const float DT = 0.5;
 
+
 inline size_t idx(size_t x, size_t y,size_t W) { return y * W + x;}
 
-void laplacien_discret(std::vector<float>& laplacien,std::span<float> vec,size_t max_row,size_t max_col) 
+void laplacien(std::vector<float>& laplacien,std::span<float> vec,size_t max_row,size_t max_col) 
 {
   for (int x = 0;x<max_col;x++){
     for (int y = 0;y<max_row;y++) {
@@ -96,8 +97,8 @@ int main() {
   // Allocation CPU
   std::vector<float> u(rows*cols,1.0f);
   std::vector<float> v(rows*cols,0.0f);
-  std::vector<float> vec_laplacien_u(rows*cols,0.0f);
-  std::vector<float> vec_laplacien_v(rows*cols,0.0f);
+  // std::vector<float> vec_laplacien_u(rows*cols,0.0f);
+  // std::vector<float> vec_laplacien_v(rows*cols,0.0f);
 
   RDHostContext* d;
   rd_init(&d,cols,rows); //cudaMalloc
@@ -108,11 +109,10 @@ int main() {
     for (int x = 0; x < cols; x++){
       for (int y = 0; y < rows; y++) {
         auto value = u[idx(x,y,cols)];
-        // int index = (int)round((((float)i/2000.)+value) *10.0);
-        int index = (int)round(value*10.0);
+        int index = (int)round((((float)i/2000.)+value) *10.0);
         ncplane_set_fg_palindex(stdp, index);
         if (value < 0.95)
-          ncplane_printf_yx(stdp,y,x,CHARSTYLE);
+          ncplane_printf_yx(stdp,y,x,"%c",CHARSTYLE);
       }
     }
 
@@ -140,12 +140,12 @@ int main() {
       }
     }  
   
-    rd_upload(d,u.data(),v.data());//Supprimer les laplaciens
-    launch_laplacien(d);
+    rd_upload(d,u.data(),v.data());
+    launch_rd(d);
     rd_download(d,u.data(),v.data());
     
-    // laplacien_discret(vec_laplacien_u,u,rows, cols);
-    // laplacien_discret(vec_laplacien_v,v,rows, cols);
+    // laplacien(vec_laplacien_u,u,rows, cols);
+    // laplacien(vec_laplacien_v,v,rows, cols);
     // calculate_u(u,v,vec_laplacien_u,vec_laplacien_v,rows,cols);
     // calculate_v(u,v,vec_laplacien_u,vec_laplacien_v,rows,cols);
 
